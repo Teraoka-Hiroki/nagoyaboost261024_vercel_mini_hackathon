@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="ja" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>信じる？裏切る？ 人間関係シミュレーター | ゲーム理論 × 自己認知探究</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind 設定 -->
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              200: '#a5f3fc',
+              300: '#67e8f9',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+              800: '#155e75',
+              900: '#164e63',
+            }
+          },
+          fontFamily: {
+            sans: ['"Hiragino Sans"', '"Meiryo"', 'system-ui', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- KaTeX CDN -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+          onload="renderMathInElement(document.body, {delimiters: [{left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}]});"></script>
+  <!-- canvas-confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <style>
+    /* カスタムスクロールバー */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .pulse-glow {
+      box-shadow: 0 0 25px rgba(34, 211, 238, 0.35);
+    }
+    .pulse-glow-rose {
+      box-shadow: 0 0 25px rgba(244, 63, 94, 0.35);
+    }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(51, 65, 85, 0.6);
+    }
+    .glass-card-hover:hover {
+      border-color: rgba(6, 182, 212, 0.6);
+      transform: translateY(-2px);
+      transition: all 0.2s ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans selection:bg-cyan-500 selection:text-black">
+
+  <!-- ===============================
+       ヘッダーエリア
+       =============================== -->
+  <header class="border-b border-slate-800 bg-slate-900/90 sticky top-0 z-40 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        
+        <!-- タイトルエリア（左） -->
+        <div class="flex items-center space-x-3">
+          <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 text-2xl font-black text-slate-950">
+            ⚖️
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-400 bg-clip-text text-transparent">
+                信じる？裏切る？ 人間関係シミュレーター
+              </h1>
+              <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-800 font-medium">高校生探究版</span>
+            </div>
+            <p class="text-xs text-slate-400 mt-0.5">
+              ゲーム理論「繰り返し囚人のジレンマ」で可視化する、あなたの意思決定・思考のクセ
+            </p>
+          </div>
+        </div>
+
+        <!-- ツールボタン ＆ プロフィールロゴ（右） -->
+        <div class="flex items-center justify-between md:justify-end flex-wrap gap-3">
+          <div class="flex items-center space-x-2">
+            <button id="theory-btn" onclick="openTheoryModal()" class="text-xs font-semibold px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 flex items-center space-x-1.5 transition-all shadow">
+              <span>📖</span>
+              <span>ゲーム理論徹底解説</span>
+            </button>
+            <button id="sound-toggle-btn" onclick="toggleSound()" class="text-xs p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition" title="効果音 ON/OFF">
+              <span id="sound-icon">🔊</span>
+            </button>
+          </div>
+
+          <!-- 指定のプロフィールロゴ -->
+          <!-- プロフィール -->
+          <div class="flex items-center mt-6 md:mt-0 bg-slate-900/80 p-3 pr-6 rounded-full border border-slate-700 shadow-xl ml-4 hover:border-cyan-500/50 transition-colors cursor-default">
+              <img src="./teraoka.png" onerror="this.src='https://ui-avatars.com/api/?name=Teraoka&background=0f172a&color=fff'" alt="Profile" class="w-14 h-14 rounded-full object-cover border-2 border-cyan-500/30">
+              <div class="text-right ml-4">
+                  <p class="font-bold text-sm text-cyan-400">テラオカ電子の自由探究ゼミ</p>
+                  <p class="text-xs text-gray-400 max-w-[200px] leading-tight mt-1">自分が価値を置くものに向かって<br>こつこつ努力する姿ほど<br>素晴らしいものはない</p>
+              </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- ===============================
+       メインコンテンツエリア
+       =============================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- 画面1: シナリオ選択＆準備（SETUP VIEW） -->
+    <section id="view-setup" class="space-y-8">
+      
+      <!-- イントロダクションバナー -->
+      <div class="glass-card rounded-2xl p-6 sm:p-8 relative overflow-hidden space-y-6">
+        <div class="absolute -right-16 -top-16 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-16 -bottom-16 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+        <!-- 上部：見出しと概要（幅全体に展開） -->
+        <div class="w-full space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="inline-flex items-center space-x-2 text-xs font-semibold px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              <span>💡 自己客観化 × ゲーム理論</span>
+            </div>
+            <span class="text-xs text-slate-400 font-medium">ゲーム理論「繰り返し囚人のジレンマ」モデル</span>
+          </div>
+
+          <h2 class="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-white leading-snug tracking-tight">
+            人間関係で、あなたは<span class="text-cyan-400 underline decoration-cyan-500 underline-offset-4">「最初に信じる」</span>か、それとも<span class="text-rose-400 underline decoration-rose-500 underline-offset-4">「身を守る」</span>か？
+          </h2>
+
+          <p class="text-slate-300 text-sm sm:text-base leading-relaxed">
+            友達付き合い、部活、学校祭、グループワーク……私たちは日々、無意識に「協力するか、自分だけ得を取るか」の選択を繰り返しています。
+            このシミュレーターでは、正体不明の4人の相手と対戦することで、日常のコミュニケーションに潜むあなたの「無意識の行動パターン」をデータとして可視化します。
+          </p>
+        </div>
+
+        <!-- 下部：3つの可視化指標（左右いっぱいの3カラムカードで直感的に配置） -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+          <div class="bg-slate-900/80 border border-cyan-900/50 rounded-xl p-4 space-y-1.5 hover:border-cyan-500/40 transition">
+            <div class="flex items-center space-x-2 text-cyan-400 font-bold text-sm">
+              <span>🌱</span>
+              <span>初期信頼度（初手協調率）</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              初対面の相手をまず信じるか、警戒して防衛するか。「性善説」の度合いを測定。
+            </p>
+          </div>
+
+          <div class="bg-slate-900/80 border border-rose-900/50 rounded-xl p-4 space-y-1.5 hover:border-rose-500/40 transition">
+            <div class="flex items-center space-x-2 text-rose-400 font-bold text-sm">
+              <span>🔥</span>
+              <span>報復の長さ（寛容度）</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              裏切られたとき、怒りを何ターン引きずるか。アンガーマネジメントの傾向を測定。
+            </p>
+          </div>
+
+          <div class="bg-slate-900/80 border border-amber-900/50 rounded-xl p-4 space-y-1.5 hover:border-amber-500/40 transition">
+            <div class="flex items-center space-x-2 text-amber-400 font-bold text-sm">
+              <span>⚖️</span>
+              <span>搾取性・誘惑への耐性</span>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              相手が絶対に反撃してこないと分かったとき、搾取に走るか、協調を保てるかを測定。
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- シナリオ選択セクション -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+            <span>🎭</span>
+            <span>対戦シナリオを選択（高校生の日常テーマ）</span>
+          </h3>
+          <span class="text-xs text-slate-400">高校生活に密着した5つのシチュエーション</span>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="scenario-cards-container">
+          <!-- JSでシナリオカードを動的レンダリング -->
+        </div>
+      </div>
+
+      <!-- 選択中のシナリオ詳細 & 利得表プレビュー -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- シナリオ詳細解説（左側 7カラム） -->
+        <div class="lg:col-span-7 glass-card rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="font-bold text-cyan-300 text-base flex items-center space-x-2" id="selected-scenario-title">
+              <span>📌 シナリオ詳細</span>
+            </h4>
+            <span class="text-xs px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 border border-slate-700 font-mono" id="selected-scenario-tag">シナリオ1</span>
+          </div>
+
+          <p class="text-slate-300 text-sm leading-relaxed" id="selected-scenario-desc">
+            説明文
+          </p>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div class="bg-cyan-950/40 border border-cyan-800/60 rounded-xl p-3.5 space-y-1">
+              <span class="text-xs font-bold text-cyan-400 flex items-center space-x-1">
+                <span>🤝</span><span>【協力】の具体的行動</span>
+              </span>
+              <p class="text-xs text-slate-200" id="selected-scenario-coop">相手に配慮し、互いの利益のために誠実に動く</p>
+            </div>
+            <div class="bg-rose-950/40 border border-rose-800/60 rounded-xl p-3.5 space-y-1">
+              <span class="text-xs font-bold text-rose-400 flex items-center space-x-1">
+                <span>😈</span><span>【裏切り】の具体的行動</span>
+              </span>
+              <p class="text-xs text-slate-200" id="selected-scenario-defect">自分の都合や利益を優先し、相手に負担を押し付ける</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 利得マトリクス早見表（右側 5カラム） -->
+        <div class="lg:col-span-5 glass-card rounded-2xl p-6 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h4 class="font-bold text-white text-base flex items-center space-x-2">
+              <span>📊</span>
+              <span>利得（スコア）マトリクス</span>
+            </h4>
+            <span class="text-xs text-cyan-400 font-mono">1ターンの配分</span>
+          </div>
+
+          <div class="overflow-hidden rounded-xl border border-slate-800 text-xs">
+            <div class="grid grid-cols-3 bg-slate-900 font-semibold text-center py-2 text-slate-300 border-b border-slate-800">
+              <div>自分 ＼ 相手</div>
+              <div class="text-cyan-400">相手: 協力 🤝</div>
+              <div class="text-rose-400">相手: 裏切り 😈</div>
+            </div>
+            <div class="grid grid-cols-3 border-b border-slate-800/80 bg-slate-900/40">
+              <div class="p-2.5 font-semibold text-cyan-400 flex items-center justify-center bg-slate-900/60">自分: 協力 🤝</div>
+              <div class="p-2.5 text-center bg-cyan-950/20 border-r border-slate-800">
+                <span class="font-bold text-emerald-400 text-sm">互いに +3点</span>
+                <p class="text-[10px] text-slate-400">平和なWin-Win (R)</p>
+              </div>
+              <div class="p-2.5 text-center bg-rose-950/20">
+                <span class="font-bold text-rose-400 text-sm">自 0点 / 相 +5点</span>
+                <p class="text-[10px] text-slate-400">搾取される (S)</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 bg-slate-900/40">
+              <div class="p-2.5 font-semibold text-rose-400 flex items-center justify-center bg-slate-900/60">自分: 裏切り 😈</div>
+              <div class="p-2.5 text-center bg-amber-950/20 border-r border-slate-800">
+                <span class="font-bold text-amber-400 text-sm">自 +5点 / 相 0点</span>
+                <p class="text-[10px] text-slate-400">独り勝ち搾取 (T)</p>
+              </div>
+              <div class="p-2.5 text-center bg-slate-800/40">
+                <span class="font-bold text-slate-300 text-sm">互いに +1点</span>
+                <p class="text-[10px] text-slate-400">共倒れLose-Lose (P)</p>
+              </div>
+            </div>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-tight">
+            ※数式条件：$T(5) > R(3) > P(1) > S(0)$ かつ $2R(6) > T+S(5)$
+          </p>
+        </div>
+
+      </div>
+
+      <!-- 設定＆スタートボタン -->
+      <div class="glass-card rounded-2xl p-6 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="space-y-1 text-center sm:text-left">
+          <label class="text-xs font-semibold text-slate-300 block">各対戦相手あたりのターン数（対戦相手は4名）</label>
+          <div class="flex items-center justify-center sm:justify-start space-x-2 pt-1">
+            <button onclick="setTurnLength(5)" class="turn-len-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition" data-turns="5">
+              5ターン (計20戦/快速)
+            </button>
+            <button onclick="setTurnLength(10)" class="turn-len-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition bg-cyan-600 text-white border-cyan-500 shadow" data-turns="10">
+              10ターン (計40戦/標準)
+            </button>
+            <button onclick="setTurnLength(15)" class="turn-len-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition" data-turns="15">
+              15ターン (計60戦/じっくり)
+            </button>
+          </div>
+        </div>
+
+        <button onclick="startGame()" class="w-full sm:w-auto px-10 py-4 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-base tracking-wider uppercase transition shadow-xl shadow-cyan-500/25 pulse-glow flex items-center justify-center space-x-3">
+          <span>🚀 シミュレーション開始</span>
+          <span class="text-xl">➔</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- 画面2: 対戦プレイ画面（GAME VIEW） -->
+    <section id="view-game" class="hidden space-y-6">
+      
+      <!-- 対戦ヘッダー（進行状況バー） -->
+      <div class="glass-card rounded-2xl p-4 sm:p-5 space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <div class="flex items-center space-x-3">
+            <span class="px-2.5 py-1 rounded-md bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold text-xs" id="game-opponent-badge">
+              対戦相手 1 / 4
+            </span>
+            <h3 class="font-extrabold text-white text-base sm:text-lg flex items-center space-x-2">
+              <span id="game-opponent-name">正体不明の生徒 A</span>
+              <span class="text-xs text-slate-400 font-normal">（匿名アルゴリズム）</span>
+            </h3>
+          </div>
+          <div class="text-xs sm:text-sm font-mono text-slate-300">
+            この相手との対戦: <span class="text-cyan-400 font-bold" id="game-current-turn">1</span> / <span id="game-total-turns-per-bot">10</span> ターン
+            <span class="text-slate-500 mx-1">|</span>
+            全体: <span class="text-cyan-400 font-bold" id="game-overall-turn">1</span> / <span id="game-overall-total-turns">40</span>
+          </div>
+        </div>
+
+        <!-- 進行バー -->
+        <div class="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+          <div id="game-progress-bar" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: 2.5%"></div>
+        </div>
+      </div>
+
+      <!-- メイン対戦アリーナ（VSカード） -->
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch">
+        
+        <!-- プレイヤー側（左側 5カラム） -->
+        <div class="md:col-span-5 glass-card rounded-2xl p-6 flex flex-col justify-between border-cyan-900/50 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 rounded-xl bg-cyan-950 border border-cyan-700/60 flex items-center justify-center text-2xl shadow">
+                🧑‍🎓
+              </div>
+              <div>
+                <span class="text-xs font-semibold text-cyan-400">あなた（プレイヤー）</span>
+                <p class="text-sm font-bold text-white">累計スコア</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-3xl font-black text-cyan-400 font-mono" id="score-user">0</span>
+              <span class="text-xs text-slate-400 block">pts</span>
+            </div>
+          </div>
+
+          <!-- 前ターンの選択表示 -->
+          <div class="my-6 p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-xs text-slate-400 block mb-1">直前に選んだ手</span>
+            <div id="user-last-action" class="text-base font-bold text-slate-500">
+              まだ手を出していません
+            </div>
+            <div id="user-round-delta" class="text-xs font-mono font-bold mt-1 text-slate-400">-</div>
+          </div>
+
+          <!-- シナリオのコンテキスト想起 -->
+          <div class="text-xs text-slate-400 bg-slate-900/40 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-cyan-400 font-semibold block mb-0.5" id="arena-scenario-title">現在のシチュエーション</span>
+            <span id="arena-scenario-brief" class="text-slate-300">文化祭の備品を融通し合うか、独占するか</span>
+          </div>
+        </div>
+
+        <!-- VS 中央演出エリア（2カラム） -->
+        <div class="md:col-span-2 flex flex-col items-center justify-center py-4">
+          <div class="w-14 h-14 rounded-full bg-slate-900 border-2 border-slate-700 flex items-center justify-center text-lg font-black text-slate-300 shadow-inner">
+            VS
+          </div>
+          <div id="round-result-badge" class="mt-3 px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700 transition-all text-center">
+            選択してください
+          </div>
+        </div>
+
+        <!-- 相手Bot側（右側 5カラム） -->
+        <div class="md:col-span-5 glass-card rounded-2xl p-6 flex flex-col justify-between border-slate-800 relative overflow-hidden">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+              <div class="w-12 h-12 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-2xl shadow">
+                🎭
+              </div>
+              <div>
+                <span class="text-xs font-semibold text-slate-400" id="bot-title-label">対戦相手</span>
+                <p class="text-sm font-bold text-white" id="bot-name-label">正体不明の生徒 A</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span class="text-3xl font-black text-slate-300 font-mono" id="score-bot">0</span>
+              <span class="text-xs text-slate-400 block">pts</span>
+            </div>
+          </div>
+
+          <!-- 相手の直前の選択表示 -->
+          <div class="my-6 p-4 rounded-xl bg-slate-900/80 border border-slate-800 text-center">
+            <span class="text-xs text-slate-400 block mb-1">相手が直前に出した手</span>
+            <div id="bot-last-action" class="text-base font-bold text-slate-500">
+              まだ手を出していません
+            </div>
+            <div id="bot-round-delta" class="text-xs font-mono font-bold mt-1 text-slate-400">-</div>
+          </div>
+
+          <!-- 相手のヒント（ミステリアスな文面） -->
+          <div class="text-xs text-slate-400 bg-slate-900/40 p-3 rounded-lg border border-slate-800/80">
+            <span class="text-amber-400 font-semibold block mb-0.5">💡 対戦のヒント</span>
+            <span class="text-slate-300" id="bot-hint-text">相手には独自の「思考パターン」があります。何回かやり取りして相手の行動論理を探ってみましょう。</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 行動選択ボタンエリア -->
+      <div class="glass-card rounded-2xl p-6 text-center space-y-4" id="action-panel">
+        <h4 class="text-sm font-bold text-slate-300">
+          次の手を決めてください（タップで即時判定されます）
+        </h4>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+          <!-- 協力ボタン -->
+          <button id="btn-cooperate" onclick="makeChoice('C')" class="group p-5 rounded-2xl bg-gradient-to-br from-cyan-950/80 to-slate-900 border-2 border-cyan-500/60 hover:border-cyan-400 hover:bg-cyan-900/40 transition-all text-left shadow-lg hover:shadow-cyan-500/20 active:scale-[0.98]">
+            <div class="flex items-center space-x-3">
+              <span class="text-3xl group-hover:scale-110 transition-transform">🤝</span>
+              <div>
+                <span class="text-base font-black text-cyan-300 block">【協力する】</span>
+                <span class="text-xs text-cyan-400/80" id="btn-coop-sub">仲間を信じて力を合わせる</span>
+              </div>
+            </div>
+            <div class="mt-3 text-[11px] text-slate-300/80 border-t border-cyan-900/40 pt-2 flex justify-between">
+              <span>相手も協力なら: <b class="text-emerald-400">+3pt</b></span>
+              <span>相手が裏切ると: <b class="text-rose-400">+0pt</b></span>
+            </div>
+          </button>
+
+          <!-- 裏切りボタン -->
+          <button id="btn-defect" onclick="makeChoice('D')" class="group p-5 rounded-2xl bg-gradient-to-br from-rose-950/80 to-slate-900 border-2 border-rose-500/60 hover:border-rose-400 hover:bg-rose-900/40 transition-all text-left shadow-lg hover:shadow-rose-500/20 active:scale-[0.98]">
+            <div class="flex items-center space-x-3">
+              <span class="text-3xl group-hover:scale-110 transition-transform">😈</span>
+              <div>
+                <span class="text-base font-black text-rose-300 block">【裏切る】</span>
+                <span class="text-xs text-rose-400/80" id="btn-defect-sub">自分だけ得をする・リスク回避</span>
+              </div>
+            </div>
+            <div class="mt-3 text-[11px] text-slate-300/80 border-t border-rose-900/40 pt-2 flex justify-between">
+              <span>相手が協力なら: <b class="text-amber-400">+5pt</b></span>
+              <span>相手も裏切りなら: <b class="text-slate-400">+1pt</b></span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- 対戦履歴タイムライン -->
+      <div class="glass-card rounded-2xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <h4 class="text-xs font-bold text-slate-300 flex items-center space-x-2">
+            <span>⏱️</span>
+            <span>この相手との行動履歴（直近順）</span>
+          </h4>
+          <span class="text-[11px] text-slate-500">最新の手が右側に表示されます</span>
+        </div>
+        <div class="flex items-center space-x-2 overflow-x-auto pb-2" id="round-history-chips">
+          <div class="text-xs text-slate-500 italic py-1">まだ履歴はありません</div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 画面3: 種明かし画面（REVEAL VIEW） -->
+    <section id="view-reveal" class="hidden space-y-8">
+      
+      <!-- タイトルヘッダー -->
+      <div class="glass-card rounded-2xl p-6 sm:p-8 text-center space-y-3 relative overflow-hidden">
+        <div class="inline-flex items-center space-x-2 text-xs font-bold px-3 py-1 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20">
+          <span>🎉 全シミュレーション完了</span>
+        </div>
+        <h2 class="text-2xl sm:text-3xl font-extrabold text-white">
+          対戦相手4人の「正体（アルゴリズム）」を開示！
+        </h2>
+        <p class="text-slate-300 text-sm max-w-2xl mx-auto">
+          あなたが対峙していた相手は、現実社会にもよく存在する4つの意思決定ロジックで動いていました。
+          あなたは彼ら相手にどのように振る舞い、どんな結果をもたらしたでしょうか？
+        </p>
+      </div>
+
+      <!-- 4人のBot正体カードグリッド -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6" id="bot-reveal-grid">
+        <!-- JSで4人のBotの正体カードを生成 -->
+      </div>
+
+      <!-- スコア比較グラフ -->
+      <div class="glass-card rounded-2xl p-6 space-y-4">
+        <h3 class="text-base font-bold text-white flex items-center space-x-2">
+          <span>📊</span>
+          <span>相手別の獲得スコア比較（あなた vs 相手Bot）</span>
+        </h3>
+        <div class="h-64 sm:h-72 w-full">
+          <canvas id="scores-by-bot-chart"></canvas>
+        </div>
+      </div>
+
+      <!-- ダッシュボードへ進むボタン -->
+      <div class="text-center pt-2">
+        <button onclick="goToDashboard()" class="px-10 py-4 rounded-xl bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-base transition shadow-xl shadow-cyan-500/20 pulse-glow inline-flex items-center space-x-3">
+          <span>🧠 あなたの思考のクセを分析（自己分析ダッシュボードへ）</span>
+          <span>➔</span>
+        </button>
+      </div>
+
+    </section>
+
+    <!-- 画面4: 自己分析ダッシュボード（DASHBOARD VIEW） -->
+    <section id="view-dashboard" class="hidden space-y-8">
+      
+      <!-- 診断結果ヘッダー -->
+      <div class="glass-card rounded-2xl p-6 sm:p-8 space-y-4 relative overflow-hidden">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div class="inline-flex items-center space-x-2 text-xs font-bold px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 mb-2">
+              <span>🧬 行動分析レポート</span>
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-white flex items-center space-x-3">
+              <span>あなたの人間関係戦略タイプ：</span>
+              <span id="personality-type-badge" class="bg-gradient-to-r from-cyan-400 to-sky-300 bg-clip-text text-transparent">分析中...</span>
+            </h2>
+          </div>
+          <div class="flex items-center space-x-3">
+            <button onclick="downloadReport()" class="px-4 py-2.5 rounded-xl bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-700 text-xs font-bold flex items-center space-x-2 transition shadow">
+              <span>💾</span>
+              <span>探究学習用テキスト（.txt）保存</span>
+            </button>
+            <button onclick="restartSimulation()" class="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold flex items-center space-x-2 transition">
+              <span>🔄</span>
+              <span>もう一度プレイ</span>
+            </button>
+          </div>
+        </div>
+        <p class="text-slate-300 text-sm leading-relaxed" id="personality-summary-text">
+          行動ログから導き出されたあなたの対人関係の心理傾向です。
+        </p>
+      </div>
+
+      <!-- 3大分析指標カード（グリッド） -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        
+        <!-- 指標1: 初期信頼度 -->
+        <div class="glass-card rounded-2xl p-6 space-y-3 relative overflow-hidden border-cyan-900/40">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">指標 1</span>
+            <span class="text-2xl font-black text-cyan-400 font-mono" id="metric-trust-val">0%</span>
+          </div>
+          <h4 class="text-base font-bold text-white flex items-center space-x-1.5">
+            <span>🌱</span><span>初期信頼度（初手協調率）</span>
+          </h4>
+          <p class="text-xs text-slate-400">
+            すべての相手に対する「第1ターン」で協力した割合。初対面の人に対する基本的信頼感を示します。
+          </p>
+          <div class="pt-2 border-t border-slate-800">
+            <div class="text-xs font-semibold text-cyan-300" id="metric-trust-eval">評価中...</div>
+            <p class="text-[11px] text-slate-300 mt-1 leading-relaxed" id="metric-trust-desc">...</p>
+          </div>
+        </div>
+
+        <!-- 指標2: 報復の長さ＆許容度 -->
+        <div class="glass-card rounded-2xl p-6 space-y-3 relative overflow-hidden border-rose-900/40">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold px-2 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-800">指標 2</span>
+            <span class="text-2xl font-black text-rose-400 font-mono" id="metric-retaliation-val">0.0回</span>
+          </div>
+          <h4 class="text-base font-bold text-white flex items-center space-x-1.5">
+            <span>🔥</span><span>報復の長さ＆寛容度</span>
+          </h4>
+          <p class="text-xs text-slate-400">
+            相手に裏切られた直後、自分も何回連続で裏切り（報復）を返したかの平均ターン数。
+          </p>
+          <div class="pt-2 border-t border-slate-800">
+            <div class="text-xs font-semibold text-rose-300" id="metric-retaliation-eval">評価中...</div>
+            <p class="text-[11px] text-slate-300 mt-1 leading-relaxed" id="metric-retaliation-desc">...</p>
+          </div>
+        </div>
+
+        <!-- 指標3: 搾取性・誘惑への耐性 -->
+        <div class="glass-card rounded-2xl p-6 space-y-3 relative overflow-hidden border-amber-900/40">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-800">指標 3</span>
+            <span class="text-2xl font-black text-amber-400 font-mono" id="metric-exploit-val">0%</span>
+          </div>
+          <h4 class="text-base font-bold text-white flex items-center space-x-1.5">
+            <span>⚖️</span><span>搾取性・誘惑への耐性</span>
+          </h4>
+          <p class="text-xs text-slate-400">
+            「お人好しBot（絶対反撃しない相手）」の後半戦において、あえて裏切りを選んだ割合。
+          </p>
+          <div class="pt-2 border-t border-slate-800">
+            <div class="text-xs font-semibold text-amber-300" id="metric-exploit-eval">評価中...</div>
+            <p class="text-[11px] text-slate-300 mt-1 leading-relaxed" id="metric-exploit-desc">...</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- チャートと詳細アドバイスの2カラム -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- レーダーチャート（左 5カラム） -->
+        <div class="lg:col-span-5 glass-card rounded-2xl p-6 space-y-4">
+          <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+            <span>🕸️</span>
+            <span>あなたの行動バランス（特性レーダーチャート）</span>
+          </h3>
+          <div class="h-64 sm:h-72 w-full flex items-center justify-center">
+            <canvas id="personality-radar-chart"></canvas>
+          </div>
+          <p class="text-[11px] text-slate-400 leading-tight">
+            ※協調性、防衛力、寛容度、リアリズム、安定性の5次元で総合プロファイリングしています。
+          </p>
+        </div>
+
+        <!-- 深層フィードバック＆高校生向け考察（右 7カラム） -->
+        <div class="lg:col-span-7 glass-card rounded-2xl p-6 space-y-4">
+          <h3 class="text-sm font-bold text-cyan-300 flex items-center space-x-2">
+            <span>🎓</span>
+            <span>高校生活に活かす探究的考察・アドバイス</span>
+          </h3>
+
+          <div class="space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed" id="dashboard-deep-advice">
+            <!-- 動的アドバイス -->
+          </div>
+
+          <div class="bg-slate-900/80 rounded-xl p-4 border border-slate-800 space-y-2">
+            <h4 class="text-xs font-bold text-amber-400 flex items-center space-x-1.5">
+              <span>🤔</span><span>振り返りのための問い（探究ノートに書いてみよう）</span>
+            </h4>
+            <ul class="text-xs text-slate-300 space-y-1.5 list-disc list-inside">
+              <li>相手が「反撃しない」と分かったとき、自分はどう感じ、なぜその手を選びましたか？</li>
+              <li>一度相手に裏切られたとき、どんな感情が湧き、いつ協調関係に戻そうとしましたか？</li>
+              <li>現実の学校生活（友達、部活、勉強）で、あなたはこのシミュレーターと同じ行動をとっていますか？</li>
+            </ul>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 全対戦履歴テーブル（アコーディオン） -->
+      <div class="glass-card rounded-2xl p-6 space-y-4">
+        <div class="flex items-center justify-between cursor-pointer" onclick="toggleHistoryTable()">
+          <h3 class="text-sm font-bold text-white flex items-center space-x-2">
+            <span>📋</span>
+            <span>全ターンの対戦ログ詳細データ（クリックで開閉）</span>
+          </h3>
+          <span id="history-toggle-icon" class="text-xs text-cyan-400 font-mono">▼ 開く</span>
+        </div>
+
+        <div id="history-table-container" class="hidden overflow-x-auto pt-3 border-t border-slate-800">
+          <table class="w-full text-xs text-left text-slate-300">
+            <thead class="text-[11px] uppercase bg-slate-900/80 text-slate-400 border-b border-slate-800">
+              <tr>
+                <th class="px-3 py-2">通番</th>
+                <th class="px-3 py-2">相手</th>
+                <th class="px-3 py-2">ターン</th>
+                <th class="px-3 py-2">あなた</th>
+                <th class="px-3 py-2">相手</th>
+                <th class="px-3 py-2">結果</th>
+                <th class="px-3 py-2">得点(自/相)</th>
+                <th class="px-3 py-2">累計(自/相)</th>
+              </tr>
+            </thead>
+            <tbody id="history-table-body" class="divide-y divide-slate-800/60 font-mono">
+              <!-- 行データ -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- ===============================
+       ゲーム理論＆囚人のジレンマ 徹底解説モーダル
+       =============================== -->
+  <div id="theory-modal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
+    <div class="bg-slate-900 border border-slate-700 max-w-4xl w-full max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+      
+      <!-- モーダルヘッダー -->
+      <div class="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/90 sticky top-0 z-10">
+        <div class="flex items-center space-x-2.5">
+          <span class="text-2xl">📚</span>
+          <div>
+            <h3 class="font-extrabold text-lg text-white">高校生のためのゲーム理論・囚人のジレンマ徹底解説</h3>
+            <p class="text-xs text-cyan-400">利得マトリクス、ナッシュ均衡、フォーク定理、そしてアクセルロッドの勝因原則</p>
+          </div>
+        </div>
+        <button onclick="closeTheoryModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center font-bold text-lg">
+          ✕
+        </button>
+      </div>
+
+      <!-- モーダル本文（スクロール可能） -->
+      <div class="p-6 sm:p-8 space-y-8 overflow-y-auto text-slate-300 text-sm leading-relaxed" id="theory-content-body">
+
+        <!-- 第1章: 起源 -->
+        <section class="space-y-3">
+          <div class="flex items-center space-x-2 text-cyan-400 font-bold text-base border-b border-slate-800 pb-1">
+            <span>1. 囚人のジレンマとは？（問題の起源）</span>
+          </div>
+          <p>
+            「囚人のジレンマ（Prisoner's Dilemma）」は、1950年にアメリカの数学者アルバート・タッカー（Albert Tucker）が定式化したゲーム理論の代表的なモデルです。
+            警察に逮捕された2人の共犯容疑者が別々の取調室に入れられ、検察官から「自白（裏切り）するか、黙秘（協力）するか」を迫られるという設定から名付けられました。
+          </p>
+          <p>
+            この問題の本質は、<strong>「互いに協力すれば最高の結果（社会全体の最適）が得られると分かっているのに、個人の合理的な損得勘定に従うと、互いに裏切り合って最悪の結果に陥ってしまう」</strong>という構造的な矛盾（社会的ジレンマ）にあります。
+          </p>
+        </section>
+
+        <!-- 第2章: 利得マトリクスと数式条件 -->
+        <section class="space-y-3">
+          <div class="flex items-center space-x-2 text-cyan-400 font-bold text-base border-b border-slate-800 pb-1">
+            <span>2. 利得マトリクスの数学的定義と条件</span>
+          </div>
+          <p>
+            囚人のジレンマが成立するためには、プレイヤーの選択と得点（利得: Payoff）の間に厳密な数学的条件が必要です。
+            一般に利得は以下の記号で定義されます：
+          </p>
+          <ul class="list-disc list-inside space-y-1 text-xs sm:text-sm pl-2">
+            <li><strong>$T$ (Temptation to defect):</strong> 自分だけ裏切る誘惑の報酬（本アプリでは <b>5点</b>）</li>
+            <li><strong>$R$ (Reward for mutual cooperation):</strong> 相互に協力したときの報酬（本アプリでは <b>3点</b>）</li>
+            <li><strong>$P$ (Punishment for mutual defection):</strong> 相互に裏切ったときの罰（本アプリでは <b>1点</b>）</li>
+            <li><strong>$S$ (Sucker's payoff):</strong> 自分だけ協力して裏切られたときの「お人好しの報い」（本アプリでは <b>0点</b>）</li>
+          </ul>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <p class="font-bold text-white text-xs">【条件式 1：強支配の順序】</p>
+            <p class="font-mono text-cyan-300 text-center text-base py-1">
+              $$T > R > P > S$$
+            </p>
+            <p class="text-xs text-slate-400">
+              本アプリの設定値では $5 > 3 > 1 > 0$ であり、この条件を満たしています。
+            </p>
+          </div>
+
+          <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-2">
+            <p class="font-bold text-white text-xs">【条件式 2：協調の社会的是正】</p>
+            <p class="font-mono text-cyan-300 text-center text-base py-1">
+              $$2R > T + S$$
+            </p>
+            <p class="text-xs text-slate-400">
+              「互いに裏切りと協力を交互に繰り返して山分けする（平均利得 $(T+S)/2$）」よりも、「ずっと双方が協力し続ける（利得 $R$）」ほうが社会全体の合計得点が高くなるための条件です。
+              本アプリでは $2 \times 3 = 6 > 5 + 0 = 5$ となり、確かに成立しています。
+            </p>
+          </div>
+        </section>
+
+        <!-- 第3章: ナッシュ均衡とパレート最適 -->
+        <section class="space-y-3">
+          <div class="flex items-center space-x-2 text-cyan-400 font-bold text-base border-b border-slate-800 pb-1">
+            <span>3. ナッシュ均衡とパレート最適の悲劇</span>
+          </div>
+          <p>
+            <strong>【ナッシュ均衡（Nash Equilibrium）】</strong>とは、相手の戦略が固定されている前提のもとで、どのプレイヤーも自分だけ戦略を変えても得をしない（単独離脱の誘因がない）安定した状態のことです。
+          </p>
+          <div class="p-3 rounded-lg bg-slate-950/60 border border-slate-800 text-xs space-y-1">
+            <p>・もし相手が「協力」を選んだ場合：自分は「協力(3)」よりも「裏切り(5)」を選んだ方が得。</p>
+            <p>・もし相手が「裏切り」を選んだ場合：自分は「協力(0)」よりも「裏切り(1)」を選んだ方が得。</p>
+          </div>
+          <p>
+            相手がどちらを選ぼうとも、自分にとっては常に「裏切り」を選ぶことが有利です。このように相手の出手に関わらず常に最大利得をもたらす戦略を<strong>強支配戦略（Strictly Dominant Strategy）</strong>と呼びます。
+            結果として、双方が合理的知性を持っていればいるほど、必ず $(裏切り, 裏切り) = (1, 1)$ に落ち着いてしまいます。これがこのゲームの唯一のナッシュ均衡です。
+          </p>
+          <p>
+            一方で、双方が協力した場合 $(協力, 協力) = (3, 3)$ は、誰の利得も減らすことなく全員の利得を改善できる状態（パレート支配）であり、社会的に理想的な<strong>パレート最適（Pareto Optimality）</strong>です。
+            個人の利己的合理性を追求した結果、パレート最適な状態に到達できない――これが「ジレンマ」の核心です。
+          </p>
+        </section>
+
+        <!-- 第4章: 繰り返し囚人のジレンマと割引因子 -->
+        <section class="space-y-3">
+          <div class="flex items-center space-x-2 text-cyan-400 font-bold text-base border-b border-slate-800 pb-1">
+            <span>4. 繰り返しゲームと将来の割引因子 $\delta$（フォーク定理）</span>
+          </div>
+          <p>
+            一回限りのゲームでは裏切りが支配的ですが、<strong>「関係が明日も明後日も続く（繰り返しゲーム: Iterated Prisoner's Dilemma）」</strong>場合、状況は激変します。
+            「明日また顔を合わせるかもしれない」という将来への見通しを、数学的には<strong>将来利得の割引因子 $\delta$ ($0 < \delta < 1$)</strong>（あるいは明日もゲームが続く確率）としてモデル化します。
+          </p>
+          <p>
+            ずっと協力関係を維持した場合の無限将来にわたる割引利得の合計 $V_{\text{coop}}$ は等比数列の和として次のように表されます：
+          </p>
+          <div class="font-mono text-cyan-300 text-center py-1">
+            $$V_{\text{coop}} = R + \delta R + \delta^2 R + \dots = \sum_{t=0}^{\infty} \delta^t R = \frac{R}{1 - \delta}$$
+          </div>
+          <p>
+            一方、第1ターンで相手を裏切って一時的に最大の $T$ を得たものの、以降は相手から報復され続け、永遠に $(P, P)$ に陥った場合の合計利得 $V_{\text{defect}}$ は：
+          </p>
+          <div class="font-mono text-cyan-300 text-center py-1">
+            $$V_{\text{defect}} = T + \delta P + \delta^2 P + \dots = T + \frac{\delta P}{1 - \delta}$$
+          </div>
+          <p>
+            協力関係が維持される（裏切るインセンティブが消える）条件は $V_{\text{coop}} \ge V_{\text{defect}}$ です。これを $\delta$ について解くと：
+          </p>
+          <div class="font-mono text-emerald-400 text-center py-1">
+            $$\delta \ge \frac{T - R}{T - P}$$
+          </div>
+          <p>
+            本シミュレーターの数値（$T=5, R=3, P=1$）を代入してみましょう：
+          </p>
+          <div class="font-mono text-cyan-300 text-center py-1">
+            $$\delta \ge \frac{5 - 3}{5 - 1} = \frac{2}{4} = 0.5$$
+          </div>
+          <p>
+            つまり、「将来の関係を現在の半分以上（$\delta \ge 0.5$）大切にする環境」であれば、裏切りよりも協調関係を維持する方が数学的にも長期利得が大きくなります（フォーク定理の一形態）。
+            <strong>「明日も関係が続く」という確信こそが、利己的な人間同士に信頼と協力を生み出す鍵</strong>なのです。
+          </p>
+        </section>
+
+        <!-- 第5章: アクセルロッドの勝因4原則 -->
+        <section class="space-y-3">
+          <div class="flex items-center space-x-2 text-cyan-400 font-bold text-base border-b border-slate-800 pb-1">
+            <span>5. アクセルロッドの選手権と4つの勝利原則</span>
+          </div>
+          <p>
+            1980年、政治学者ロバート・アクセルロッド（Robert Axelrod）は世界中のゲーム理論家や数学者に呼びかけ、繰り返し囚人のジレンマを戦わせる大規模なコンピュータ・トーナメントを開催しました。
+            極めて複雑で悪辣なプログラムが多数集まる中、優勝したのは心理学者アナトール・ラパポートが提出した、わずか数行の極めてシンプルな戦略<strong>「しっぺ返し（Tit-for-Tat）」</strong>でした。
+          </p>
+          <p>アクセルロッドの分析により、長期的に成功する戦略には以下の4つの共通原則があることが判明しました：</p>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+              <span class="text-xs font-bold text-cyan-400">1. 善良さ（Nice）</span>
+              <p class="text-xs text-slate-300 mt-1">
+                自分からは絶対に先に裏切らないこと。無用な争いや報復の連鎖を未然に防ぎます。
+              </p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+              <span class="text-xs font-bold text-rose-400">2. 報復心（Retaliatory）</span>
+              <p class="text-xs text-slate-300 mt-1">
+                相手が裏切ったときは、即座に毅然と裏切り返すこと。「搾取できるカモ」と思われるのを防ぎます。
+              </p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+              <span class="text-xs font-bold text-emerald-400">3. 寛容さ（Forgiving）</span>
+              <p class="text-xs text-slate-300 mt-1">
+                相手が協調に戻ったら、過去を根に持たず即座に協調を再開すること。泥沼の仕返し合戦を終わらせます。
+              </p>
+            </div>
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+              <span class="text-xs font-bold text-amber-400">4. 明快さ（Clear）</span>
+              <p class="text-xs text-slate-300 mt-1">
+                自分の行動パターンが相手にとって予測しやすいこと。相手に疑心暗鬼を生じさせず、協力を引き出します。
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- 第6章: 高校生の日常への応用 -->
+        <section class="space-y-3">
+          <div class="flex items-center space-x-2 text-cyan-400 font-bold text-base border-b border-slate-800 pb-1">
+            <span>6. 高校生活の人間関係への示唆（探究のヒント）</span>
+          </div>
+          <p>
+            学校生活において、「なぜあの子は裏切られたら一生口を利かないのか？」「なぜテスト前にノートを隠す人と教え合う人がいるのか？」「どうしてクラスLINEで既読スルーが連鎖するのか？」――
+            これらは個人の性格の問題だけでなく、<strong>「相手との関係がどれだけ長く続くか（$\delta$ の大きさ）」</strong>や<strong>「過去の裏切りに対するアンガーマネジメント（報復期間）」</strong>のゲーム理論的結果として説明できます。
+          </p>
+          <p>
+            このアプリを通じて自分の選択パターンを観察し、自分が「お人好しすぎて搾取されていないか」「一度の失敗を根に持って自ら泥沼に入っていないか」を客観的に見つめ直してみましょう。
+          </p>
+        </section>
+
+      </div>
+
+      <!-- モーダルフッター -->
+      <div class="p-4 border-t border-slate-800 bg-slate-900/90 text-right">
+        <button onclick="closeTheoryModal()" class="px-6 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold text-xs transition">
+          閉じてシミュレーターに戻る
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===============================
+       フッターエリア
+       =============================== -->
+  <footer class="border-t border-slate-800/80 bg-slate-900/60 mt-12 py-8 text-xs text-slate-400">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-3">
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="flex items-center space-x-2">
+          <span class="text-cyan-400 font-bold">信じる？裏切る？ 人間関係シミュレーター</span>
+          <span>— 高校生向け探究学習・自己認知支援ツール</span>
+        </div>
+        <div class="flex items-center space-x-4 text-slate-500">
+          <span>🔒 完全クライアント動作（外部通信なし・プライバシー保護）</span>
+          <span>📊 ゲーム理論数理モデル準拠</span>
+        </div>
+      </div>
+      <div class="text-center sm:text-left text-slate-500 text-[11px] pt-2 border-t border-slate-800/60">
+        <p>© 2026 Teraoka-Denshi. All rights reserved.</p>
+        <p class="mt-0.5">本教材は、高校生が意思決定のメカニズムを数理的・心理学的に内省するための教育目的シミュレーターです。</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ===============================
+       アプリケーション JavaScript
+       =============================== -->
+  <script>
+    /* =========================================================
+       1. データ定義（シナリオ・Botアルゴリズム・利得定数）
+       ========================================================= */
+    const PAYOFF = {
+      R: 3, // Reward (相互協力)
+      T: 5, // Temptation (自分だけ裏切り)
+      S: 0, // Sucker (自分だけ協力、搾取される)
+      P: 1  // Punishment (相互裏切り)
+    };
+
+    // 5つの高校生向けシナリオ
+    const SCENARIOS = [
+      {
+        id: "scenario-1",
+        title: "文化祭の備品シェア",
+        subtitle: "他クラスと工具・機材を融通し合うか、自クラスだけで抱え込むか",
+        tag: "学校行事",
+        icon: "🎪",
+        desc: "文化祭の準備期間、大工道具やプロジェクターなどの備品は全校で数が限られています。他クラスに快く貸し出して協力関係を築くか、自クラスの完成度を最優先して備品を隠し持って独占するか、あなたのクラスの方針が問われています。",
+        coop: "「必要な時はお互い様！」と備品を丁寧に扱い、時間通りに融通し合う。",
+        defect: "「自分たちの劇の準備が遅れる！」と人気機材を自教室に隠して独占する。",
+        coopLabel: "備品を融通する（協力）",
+        defectLabel: "備品を独占する（裏切り）"
+      },
+      {
+        id: "scenario-2",
+        title: "探究・グループワークの分担",
+        subtitle: "自分の担当リサーチを真面目にこなすか、他人に押し付けてサボるか",
+        tag: "探究学習",
+        icon: "📑",
+        desc: "4人グループで挑む「総合的な探究の時間」の発表スライド作成。週末までに各自が担当パートを調べてくる約束です。誠実に資料を作ってくるか、部活や遊びを優先してサボり、他の真面目なメンバーの成果にタダ乗りするか。",
+        coop: "休日返上で分かりやすいスライドを作成し、チームに貢献する。",
+        defect: "「忙しくて出来なかった」と言い訳し、他人の完成スライドに名前だけ連名する。",
+        coopLabel: "担当を真面目にこなす（協力）",
+        defectLabel: "サボって他人に任せる（裏切り）"
+      },
+      {
+        id: "scenario-3",
+        title: "定期考査前のノート・情報共有",
+        subtitle: "分かりやすいまとめノートを教え合うか、自分だけもらって隠すか",
+        tag: "勉強・テスト",
+        icon: "✏️",
+        desc: "難関科目の期末テスト直前。友人と「お互いのノートを見せ合おう」という話になりました。自分が工夫して書いた図入りの神ノートを素直にシェアするか、相手の要点だけスマホで撮らせてもらい、自分のノートは見せないようにするか。",
+        coop: "要点がまとまった自分の自慢ノートを惜しみなく見せ合い、互いに理解を深める。",
+        defect: "相手のノートをちゃっかりコピーさせてもらい、自分の知識はライバルに教えない。",
+        coopLabel: "ノートを教え合う（協力）",
+        defectLabel: "自分だけもらって隠す（裏切り）"
+      },
+      {
+        id: "scenario-4",
+        title: "部活動のグラウンド整備＆片付け",
+        subtitle: "きつい片付け・整備を率先してやるか、疲れたふりをして手を抜くか",
+        tag: "部活動",
+        icon: "⚾",
+        desc: "猛暑のハードな練習が終わった直後。重いトンボがけやボール拾い、部室の掃除が残っています。疲労困憊の中、チームのために進んで道具を片付けるか、ストレッチのふりをして時間を潰し、誰かが終わらせるのを待つか。",
+        coop: "疲れていても声を掛け合い、全員でテキパキと道具の片付けを完了させる。",
+        defect: "「足がつった…」と日陰で座り込み、他の部員に片付けをすべて押し付ける。",
+        coopLabel: "率先して片付ける（協力）",
+        defectLabel: "手を抜いて任せる（裏切り）"
+      },
+      {
+        id: "scenario-5",
+        title: "クラスLINE・連絡網の集約",
+        subtitle: "面倒な行事アンケートに即座に返信するか、既読スルーで放置するか",
+        tag: "日常・SNS",
+        icon: "💬",
+        desc: "クラス委員からLINEグループに「修学旅行の部屋割り希望」の確認連絡が入りました。面倒でもすぐに自分の希望を出して委員の負担を減らすか、「誰か別のやつが催促されてからでいいや」と既読スルーして放置するか。",
+        coop: "委員の苦労を思いやり、1分でフォームに回答してグループ全体の進行を助ける。",
+        defect: "「めんどくさいし後でいいや」と未読・既読無視を続け、委員に個別に催促させる。",
+        coopLabel: "すぐに回答して協力（協力）",
+        defectLabel: "既読スルーして放置（裏切り）"
+      }
+    ];
+
+    // 4人の対戦Botの定義
+    const BOTS = [
+      {
+        id: "tit_for_tat",
+        codeName: "生徒 A",
+        revealedName: "しっぺ返し（Tit-for-Tat）",
+        icon: "🪞",
+        typeTag: "鏡面・公平型",
+        color: "cyan",
+        summary: "初回は信じ、やられたらやり返し、反省したら即許す。",
+        description: "1ターン目は必ず【協力】。以降はユーザーが「直前のターンに出した手」と全く同じ手を返します。裏切られれば即座に仕返ししますが、ユーザーが協力に戻れば過去を一切引きずらずに協調を再開する、ゲーム理論最強の公平戦略です。",
+        getAction: function(history) {
+          // history: [{userAction, botAction}, ...] このBotとの履歴
+          if (history.length === 0) return 'C';
+          const lastRound = history[history.length - 1];
+          return lastRound.userAction; // 相手の直前の手
+        }
+      },
+      {
+        id: "always_cooperate",
+        codeName: "生徒 B",
+        revealedName: "お人好し（Always Cooperate）",
+        icon: "🕊️",
+        typeTag: "無条件善人型",
+        color: "emerald",
+        summary: "何があっても、どれだけ裏切られても最後まで信じ続ける。",
+        description: "ユーザーがどれだけ裏切って搾取しようと、最後まで100%【協力】を出し続けます。反撃される心配がないため、ユーザーが「相手の優しさに甘えて搾取に走るか、それとも良心で協力し続けるか」という誘惑耐性をテストするBotです。",
+        getAction: function(history) {
+          return 'C';
+        }
+      },
+      {
+        id: "grudger",
+        codeName: "生徒 C",
+        revealedName: "執念深い（Grudger / トリガー）",
+        icon: "⚡",
+        typeTag: "絶対許さない型",
+        color: "rose",
+        summary: "最初は友好的だが、一度でも裏切られたら二度と信じない。",
+        description: "最初は【協力】し続けますが、ユーザーが一度でも【裏切り】を出した瞬間、それ以降の全ターンで永久に【裏切り】を出し続けます。一度の裏切りが人間関係の不可逆な破滅（Lose-Loseの泥沼）を招く恐怖を可視化します。",
+        getAction: function(history) {
+          const everBetrayed = history.some(r => r.userAction === 'D');
+          if (everBetrayed) return 'D';
+          return 'C';
+        }
+      },
+      {
+        id: "random",
+        codeName: "生徒 D",
+        revealedName: "気まぐれ（Random Bot）",
+        icon: "🎲",
+        typeTag: "予測不能型",
+        color: "amber",
+        summary: "戦略や悪気はなく、50%の確率で完全ランダムに行動する。",
+        description: "完全にサイコロを振るように、50%の確率で協力か裏切りを決めます。合理的な意図がない相手に対して、人間は「嫌がらせされた」「試されている」と深読みして過剰反応しがちであるという認知バイアスを浮き彫りにします。",
+        getAction: function(history) {
+          return Math.random() < 0.5 ? 'C' : 'D';
+        }
+      }
+    ];
+
+    /* =========================================================
+       2. アプリケーション状態管理（State）
+       ========================================================= */
+    let state = {
+      selectedScenarioIndex: 0,
+      turnsPerBot: 10,
+      currentBotIndex: 0,
+      currentTurnInBot: 1,
+      overallTurn: 1,
+      userTotalScore: 0,
+      botTotalScore: 0,
+      isGameOver: false,
+      isInputLocked: false,
+      soundEnabled: true,
+      
+      // 全対戦履歴（フラット）: [{ id, botIndex, turnInBot, userAction, botAction, userScore, botScore, userCumScore, botCumScore }]
+      gameLogs: [],
+      // 各Botごとの個別履歴
+      botHistories: [[], [], [], []]
+    };
+
+    /* =========================================================
+       3. Web Audio API サウンド効果
+       ========================================================= */
+    let audioCtx = null;
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, type = 'sine', duration = 0.15, gainVal = 0.1) {
+      if (!state.soundEnabled) return;
+      try {
+        const ctx = getAudioContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(gainVal, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+      } catch (e) {
+        console.error("Audio error", e);
+      }
+    }
+
+    function playSoundEffect(name) {
+      if (!state.soundEnabled) return;
+      if (name === 'coop') {
+        playTone(523.25, 'triangle', 0.15, 0.15); // C5
+        setTimeout(() => playTone(659.25, 'triangle', 0.2, 0.15), 80); // E5
+      } else if (name === 'defect') {
+        playTone(392.00, 'sawtooth', 0.15, 0.12); // G4
+        setTimeout(() => playTone(311.13, 'sawtooth', 0.2, 0.12), 90); // Eb4
+      } else if (name === 'win_win') {
+        playTone(523.25, 'sine', 0.12, 0.15);
+        setTimeout(() => playTone(659.25, 'sine', 0.12, 0.15), 70);
+        setTimeout(() => playTone(783.99, 'sine', 0.25, 0.18), 140);
+      } else if (name === 'lose_lose') {
+        playTone(220, 'sawtooth', 0.3, 0.15);
+      } else if (name === 'fanfare') {
+        [523.25, 659.25, 783.99, 1046.50].forEach((f, idx) => {
+          setTimeout(() => playTone(f, 'sine', 0.3, 0.2), idx * 120);
+        });
+      }
+    }
+
+    function toggleSound() {
+      state.soundEnabled = !state.soundEnabled;
+      const icon = document.getElementById('sound-icon');
+      icon.textContent = state.soundEnabled ? '🔊' : '🔇';
+    }
+
+    /* =========================================================
+       4. 初期化＆シナリオ選択UI
+       ========================================================= */
+    document.addEventListener('DOMContentLoaded', () => {
+      renderScenarioCards();
+      selectScenario(0);
+    });
+
+    function renderScenarioCards() {
+      const container = document.getElementById('scenario-cards-container');
+      container.innerHTML = '';
+
+      SCENARIOS.forEach((sc, idx) => {
+        const isSelected = idx === state.selectedScenarioIndex;
+        const card = document.createElement('div');
+        card.className = `glass-card rounded-2xl p-4 cursor-pointer transition-all border text-left glass-card-hover ${
+          isSelected ? 'border-cyan-400 bg-cyan-950/30 ring-2 ring-cyan-500/40' : 'border-slate-800'
+        }`;
+        card.onclick = () => selectScenario(idx);
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <span class="text-2xl">${sc.icon}</span>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+              isSelected ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-slate-800 text-slate-400'
+            }">${sc.tag}</span>
+          </div>
+          <h4 class="font-bold text-sm text-white mt-2 mb-1">${sc.title}</h4>
+          <p class="text-xs text-slate-400 line-clamp-2 leading-relaxed">${sc.subtitle}</p>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function selectScenario(index) {
+      state.selectedScenarioIndex = index;
+      renderScenarioCards();
+      const sc = SCENARIOS[index];
+      
+      document.getElementById('selected-scenario-title').innerHTML = `<span>${sc.icon}</span> <span>${sc.title}</span>`;
+      document.getElementById('selected-scenario-tag').textContent = sc.tag;
+      document.getElementById('selected-scenario-desc').textContent = sc.desc;
+      document.getElementById('selected-scenario-coop').textContent = sc.coop;
+      document.getElementById('selected-scenario-defect').textContent = sc.defect;
+      
+      // ボタン文言も更新
+      document.getElementById('btn-coop-sub').textContent = sc.coopLabel;
+      document.getElementById('btn-defect-sub').textContent = sc.defectLabel;
+    }
+
+    function setTurnLength(turns) {
+      state.turnsPerBot = turns;
+      document.querySelectorAll('.turn-len-btn').forEach(btn => {
+        const bTurns = parseInt(btn.getAttribute('data-turns'), 10);
+        if (bTurns === turns) {
+          btn.className = 'turn-len-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition bg-cyan-600 text-white border-cyan-500 shadow';
+        } else {
+          btn.className = 'turn-len-btn px-3 py-1.5 rounded-lg text-xs font-semibold border transition text-slate-400 border-slate-800 hover:border-slate-700 bg-slate-900/60';
+        }
+      });
+    }
+
+    /* =========================================================
+       5. シミュレーション対戦進行ロジック
+       ========================================================= */
+    function startGame() {
+      // 状態リセット
+      state.currentBotIndex = 0;
+      state.currentTurnInBot = 1;
+      state.overallTurn = 1;
+      state.userTotalScore = 0;
+      state.botTotalScore = 0;
+      state.isGameOver = false;
+      state.isInputLocked = false;
+      state.gameLogs = [];
+      state.botHistories = [[], [], [], []];
+
+      // 画面切り替え
+      document.getElementById('view-setup').classList.add('hidden');
+      document.getElementById('view-reveal').classList.add('hidden');
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-game').classList.remove('hidden');
+
+      // 対戦画面の初期化表示
+      const sc = SCENARIOS[state.selectedScenarioIndex];
+      document.getElementById('arena-scenario-title').textContent = sc.title;
+      document.getElementById('arena-scenario-brief').textContent = sc.subtitle;
+
+      updateGameArenaUI();
+      playSoundEffect('win_win');
+    }
+
+    function updateGameArenaUI() {
+      const currentBot = BOTS[state.currentBotIndex];
+      const totalTurnsOverall = state.turnsPerBot * BOTS.length;
+
+      // ヘッダー情報
+      document.getElementById('game-opponent-badge').textContent = `対戦相手 ${state.currentBotIndex + 1} / 4`;
+      document.getElementById('game-opponent-name').textContent = `正体不明の生徒 ${String.fromCharCode(65 + state.currentBotIndex)}`;
+      document.getElementById('bot-name-label').textContent = `正体不明の生徒 ${String.fromCharCode(65 + state.currentBotIndex)}`;
+      
+      document.getElementById('game-current-turn').textContent = state.currentTurnInBot;
+      document.getElementById('game-total-turns-per-bot').textContent = state.turnsPerBot;
+      document.getElementById('game-overall-turn').textContent = state.overallTurn;
+      document.getElementById('game-overall-total-turns').textContent = totalTurnsOverall;
+
+      // プログレスバー
+      const pct = (state.overallTurn / totalTurnsOverall) * 100;
+      document.getElementById('game-progress-bar').style.width = `${Math.min(pct, 100)}%`;
+
+      // スコア表示
+      document.getElementById('score-user').textContent = state.userTotalScore;
+      document.getElementById('score-bot').textContent = state.botTotalScore;
+
+      // 履歴チップ更新
+      renderHistoryChips();
+    }
+
+    function renderHistoryChips() {
+      const chipsContainer = document.getElementById('round-history-chips');
+      const hist = state.botHistories[state.currentBotIndex];
+      
+      if (hist.length === 0) {
+        chipsContainer.innerHTML = '<div class="text-xs text-slate-500 italic py-1">この相手との履歴はまだありません</div>';
+        return;
+      }
+
+      chipsContainer.innerHTML = '';
+      hist.forEach((r, idx) => {
+        const chip = document.createElement('div');
+        chip.className = 'flex-shrink-0 px-2.5 py-1 rounded-lg border text-xs flex items-center space-x-1 font-mono ' + 
+          (r.userAction === 'C' && r.botAction === 'C' ? 'bg-cyan-950/40 border-cyan-800 text-cyan-300' :
+           r.userAction === 'D' && r.botAction === 'D' ? 'bg-slate-900 border-slate-700 text-slate-400' :
+           r.userAction === 'D' && r.botAction === 'C' ? 'bg-amber-950/40 border-amber-800 text-amber-300' :
+           'bg-rose-950/40 border-rose-800 text-rose-300');
+
+        chip.innerHTML = `
+          <span class="text-[10px] text-slate-400">#${idx + 1}</span>
+          <span>自${r.userAction === 'C' ? '🤝' : '😈'}</span>
+          <span>:</span>
+          <span>相${r.botAction === 'C' ? '🤝' : '😈'}</span>
+          <span class="font-bold ml-1">(+${r.userDelta})</span>
+        `;
+        chipsContainer.appendChild(chip);
+      });
+      // 最新にスクロール
+      chipsContainer.scrollLeft = chipsContainer.scrollWidth;
+    }
+
+    // ユーザーの手の決定
+    function makeChoice(userChoice) {
+      if (state.isInputLocked || state.isGameOver) return;
+      state.isInputLocked = true;
+
+      // サウンド再生
+      playSoundEffect(userChoice === 'C' ? 'coop' : 'defect');
+
+      const currentBot = BOTS[state.currentBotIndex];
+      const botHistory = state.botHistories[state.currentBotIndex];
+
+      // Botの手を決定
+      const botChoice = currentBot.getAction(botHistory);
+
+      // スコア計算
+      let userDelta = 0;
+      let botDelta = 0;
+      let resultBadgeText = "";
+      let resultBadgeClass = "";
+
+      if (userChoice === 'C' && botChoice === 'C') {
+        userDelta = PAYOFF.R; // 3
+        botDelta = PAYOFF.R;  // 3
+        resultBadgeText = "平和的協調 (Win-Win) 🤝 +3pt";
+        resultBadgeClass = "bg-emerald-950 text-emerald-300 border-emerald-700";
+        setTimeout(() => playSoundEffect('win_win'), 200);
+      } else if (userChoice === 'D' && botChoice === 'C') {
+        userDelta = PAYOFF.T; // 5
+        botDelta = PAYOFF.S;  // 0
+        resultBadgeText = "搾取成功 (独り勝ち) 😈 +5pt";
+        resultBadgeClass = "bg-amber-950 text-amber-300 border-amber-700";
+      } else if (userChoice === 'C' && botChoice === 'D') {
+        userDelta = PAYOFF.S; // 0
+        botDelta = PAYOFF.T;  // 5
+        resultBadgeText = "搾取された (お人好し) 😢 +0pt";
+        resultBadgeClass = "bg-rose-950 text-rose-300 border-rose-700";
+      } else { // D and D
+        userDelta = PAYOFF.P; // 1
+        botDelta = PAYOFF.P;  // 1
+        resultBadgeText = "共倒れ (Lose-Lose) 💥 +1pt";
+        resultBadgeClass = "bg-slate-900 text-slate-400 border-slate-700";
+        setTimeout(() => playSoundEffect('lose_lose'), 200);
+      }
+
+      state.userTotalScore += userDelta;
+      state.botTotalScore += botDelta;
+
+      // 履歴レコード保存
+      const roundRecord = {
+        overallTurn: state.overallTurn,
+        botIndex: state.currentBotIndex,
+        botName: currentBot.codeName,
+        turnInBot: state.currentTurnInBot,
+        userAction: userChoice,
+        botAction: botChoice,
+        userDelta: userDelta,
+        botDelta: botDelta,
+        userCumScore: state.userTotalScore,
+        botCumScore: state.botTotalScore
+      };
+
+      state.gameLogs.push(roundRecord);
+      botHistory.push(roundRecord);
+
+      // UIの直前演出反映
+      const userActionEl = document.getElementById('user-last-action');
+      userActionEl.innerHTML = userChoice === 'C' 
+        ? '<span class="text-cyan-400 font-black text-xl">🤝 協力</span>' 
+        : '<span class="text-rose-400 font-black text-xl">😈 裏切り</span>';
+      document.getElementById('user-round-delta').textContent = `+${userDelta} pts`;
+
+      const botActionEl = document.getElementById('bot-last-action');
+      botActionEl.innerHTML = botChoice === 'C'
+        ? '<span class="text-cyan-400 font-black text-xl">🤝 協力</span>'
+        : '<span class="text-rose-400 font-black text-xl">😈 裏切り</span>';
+      document.getElementById('bot-round-delta').textContent = `+${botDelta} pts`;
+
+      const badge = document.getElementById('round-result-badge');
+      badge.textContent = resultBadgeText;
+      badge.className = `mt-3 px-3 py-1 rounded-full text-xs font-bold border transition-all text-center ${resultBadgeClass}`;
+
+      updateGameArenaUI();
+
+      // ターン送り演出
+      setTimeout(() => {
+        advanceTurn();
+      }, 750);
+    }
+
+    function advanceTurn() {
+      // 現在のBotの規定ターン終了か判定
+      if (state.currentTurnInBot >= state.turnsPerBot) {
+        // 次のBotへ
+        if (state.currentBotIndex < BOTS.length - 1) {
+          state.currentBotIndex++;
+          state.currentTurnInBot = 1;
+          state.overallTurn++;
+
+          // 相手交代のアナウンス演出
+          showOpponentSwitchNotice();
+        } else {
+          // 全対戦終了！
+          finishGame();
+          return;
+        }
+      } else {
+        // 同じBotの次ターンへ
+        state.currentTurnInBot++;
+        state.overallTurn++;
+        state.isInputLocked = false;
+        updateGameArenaUI();
+      }
+    }
+
+    function showOpponentSwitchNotice() {
+      const nextLetter = String.fromCharCode(65 + state.currentBotIndex);
+      const badge = document.getElementById('round-result-badge');
+      badge.textContent = `相手が生徒 ${nextLetter} に交代しました！`;
+      badge.className = "mt-3 px-4 py-1.5 rounded-full text-xs font-black bg-cyan-600 text-white border border-cyan-400 animate-bounce text-center";
+
+      // 前ターンの表示リセット
+      document.getElementById('user-last-action').textContent = "新しい相手との対戦です";
+      document.getElementById('user-round-delta').textContent = "-";
+      document.getElementById('bot-last-action').textContent = "初手を待っています";
+      document.getElementById('bot-round-delta').textContent = "-";
+
+      updateGameArenaUI();
+      setTimeout(() => {
+        badge.textContent = "最初の手を選択してください";
+        badge.className = "mt-3 px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700 text-center";
+        state.isInputLocked = false;
+      }, 1000);
+    }
+
+    function finishGame() {
+      state.isGameOver = true;
+      playSoundEffect('fanfare');
+
+      // 紙吹雪エフェクト
+      if (typeof confetti === 'function') {
+        confetti({
+          particleCount: 120,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+
+      // 種明かし画面へ遷移
+      document.getElementById('view-game').classList.add('hidden');
+      document.getElementById('view-reveal').classList.remove('hidden');
+
+      renderBotRevealGrid();
+      renderScoresByBotChart();
+    }
+
+    /* =========================================================
+       6. 種明かし（Reveal）画面
+       ========================================================= */
+    function renderBotRevealGrid() {
+      const grid = document.getElementById('bot-reveal-grid');
+      grid.innerHTML = '';
+
+      BOTS.forEach((bot, idx) => {
+        const hist = state.botHistories[idx];
+        const userCoopCount = hist.filter(h => h.userAction === 'C').length;
+        const botCoopCount = hist.filter(h => h.botAction === 'C').length;
+        const userSubScore = hist.reduce((sum, h) => sum + h.userDelta, 0);
+        const botSubScore = hist.reduce((sum, h) => sum + h.botDelta, 0);
+
+        const card = document.createElement('div');
+        card.className = "glass-card rounded-2xl p-6 space-y-4 border border-slate-800 relative overflow-hidden";
+        
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <div class="flex items-center space-x-3">
+              <span class="text-3xl p-2 bg-slate-900 rounded-xl border border-slate-700">${bot.icon}</span>
+              <div>
+                <span class="text-xs font-mono font-bold text-cyan-400">生徒 ${String.fromCharCode(65 + idx)} の正体</span>
+                <h4 class="text-lg font-extrabold text-white">${bot.revealedName}</h4>
+              </div>
+            </div>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700 font-semibold">${bot.typeTag}</span>
+          </div>
+
+          <p class="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+            ${bot.description}
+          </p>
+
+          <div class="grid grid-cols-2 gap-3 text-xs pt-1">
+            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-slate-400 block text-[11px]">獲得スコア</span>
+              <span class="text-cyan-400 font-bold font-mono text-sm">自 ${userSubScore} pt</span>
+              <span class="text-slate-500 font-mono text-xs"> / 相 ${botSubScore} pt</span>
+            </div>
+            <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+              <span class="text-slate-400 block text-[11px]">あなたの協調率</span>
+              <span class="text-emerald-400 font-bold font-mono text-sm">${Math.round((userCoopCount / hist.length) * 100)}%</span>
+              <span class="text-slate-500 text-[10px]">(${userCoopCount}/${hist.length}回)</span>
+            </div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    let scoresByBotChartInstance = null;
+    function renderScoresByBotChart() {
+      const ctx = document.getElementById('scores-by-bot-chart').getContext('2d');
+      if (scoresByBotChartInstance) {
+        scoresByBotChartInstance.destroy();
+      }
+
+      const labels = BOTS.map((b, i) => `生徒 ${String.fromCharCode(65 + i)} (${b.revealedName.split('（')[0]})`);
+      const userScores = BOTS.map((_, i) => state.botHistories[i].reduce((s, h) => s + h.userDelta, 0));
+      const botScores = BOTS.map((_, i) => state.botHistories[i].reduce((s, h) => s + h.botDelta, 0));
+
+      scoresByBotChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'あなたの得点',
+              data: userScores,
+              backgroundColor: 'rgba(34, 211, 238, 0.8)',
+              borderColor: '#22d3ee',
+              borderWidth: 1.5,
+              borderRadius: 6
+            },
+            {
+              label: '相手Botの得点',
+              data: botScores,
+              backgroundColor: 'rgba(148, 163, 184, 0.4)',
+              borderColor: '#94a3b8',
+              borderWidth: 1,
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#cbd5e1', font: { size: 12 } }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(51, 65, 85, 0.3)' },
+              ticks: { color: '#94a3b8' }
+            },
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8' }
+            }
+          }
+        }
+      });
+    }
+
+    /* =========================================================
+       7. 自己分析ダッシュボードロジック（内省ポイント計算）
+       ========================================================= */
+    let personalityRadarChartInstance = null;
+
+    function goToDashboard() {
+      document.getElementById('view-reveal').classList.add('hidden');
+      document.getElementById('view-dashboard').classList.remove('hidden');
+
+      calculateAndRenderAnalytics();
+    }
+
+    function calculateAndRenderAnalytics() {
+      // 1. 初期信頼度（ファーストコンタクトの傾向）
+      // 全4人の相手に対する「第1ターン」で【協調】を選んだ確率
+      let initialCoopCount = 0;
+      BOTS.forEach((_, bIdx) => {
+        const firstTurn = state.botHistories[bIdx][0];
+        if (firstTurn && firstTurn.userAction === 'C') {
+          initialCoopCount++;
+        }
+      });
+      const initialTrustPct = Math.round((initialCoopCount / BOTS.length) * 100);
+
+      // 2. 許容度と報復期間（アンガーマネジメント）
+      // 相手に裏切られた直後のターンから、自分が何回連続で【裏切り】を出し続けたかの平均回数
+      let retaliationStreaks = [];
+      BOTS.forEach((_, bIdx) => {
+        const hist = state.botHistories[bIdx];
+        for (let t = 0; t < hist.length - 1; t++) {
+          // 相手が裏切ったターンを発見
+          if (hist[t].botAction === 'D') {
+            // その直後からのユーザーの連続裏切り数をカウント
+            let streak = 0;
+            for (let next = t + 1; next < hist.length; next++) {
+              if (hist[next].userAction === 'D') {
+                streak++;
+              } else {
+                break; // 協調に戻したら報復終了
+              }
+            }
+            retaliationStreaks.push(streak);
+          }
+        }
+      });
+
+      const avgRetaliation = retaliationStreaks.length > 0
+        ? (retaliationStreaks.reduce((a, b) => a + b, 0) / retaliationStreaks.length).toFixed(1)
+        : "0.0";
+
+      // 3. 搾取性・誘惑への耐性
+      // 相手が「お人好しBot（Always Cooperate, index=1）」だと判明した後半ターンにおいて、自分が【裏切り】を選択した割合
+      const alwaysCoopHist = state.botHistories[1]; // Bot B
+      const halfIndex = Math.floor(alwaysCoopHist.length / 2);
+      const lateRounds = alwaysCoopHist.slice(halfIndex);
+      const lateDefects = lateRounds.filter(r => r.userAction === 'D').length;
+      const exploitPct = lateRounds.length > 0 
+        ? Math.round((lateDefects / lateRounds.length) * 100) 
+        : 0;
+
+      // 指標UI更新
+      document.getElementById('metric-trust-val').textContent = `${initialTrustPct}%`;
+      const trustEvalEl = document.getElementById('metric-trust-eval');
+      const trustDescEl = document.getElementById('metric-trust-desc');
+      if (initialTrustPct >= 75) {
+        trustEvalEl.textContent = "オープンな性善説タイプ 🌱";
+        trustEvalEl.className = "text-xs font-semibold text-emerald-400";
+        trustDescEl.textContent = "初対面の相手に対してもまず信頼から入る寛大な姿勢です。協調の輪を広げやすい反面、悪意ある人に初手で利用されないよう注意が必要です。";
+      } else if (initialTrustPct >= 50) {
+        trustEvalEl.textContent = "バランス・観察タイプ ⚖️";
+        trustEvalEl.className = "text-xs font-semibold text-cyan-400";
+        trustDescEl.textContent = "相手を警戒しすぎず、かつ無防備にもならない現実的なアプローチです。状況を冷静に見極めています。";
+      } else {
+        trustEvalEl.textContent = "警戒・自己防衛タイプ 🛡️";
+        trustEvalEl.className = "text-xs font-semibold text-amber-400";
+        trustDescEl.textContent = "「騙されたくない」という防衛本能が強く働きます。リスクは回避できますが、相手もしっぺ返し戦略だった場合、初手から相互裏切りの泥沼に陥るリスクがあります。";
+      }
+
+      document.getElementById('metric-retaliation-val').textContent = `${avgRetaliation} ターン`;
+      const retEvalEl = document.getElementById('metric-retaliation-eval');
+      const retDescEl = document.getElementById('metric-retaliation-desc');
+      const retValNum = parseFloat(avgRetaliation);
+      if (retValNum <= 1.0) {
+        retEvalEl.textContent = "迅速な切り替え・高寛容度 🕊️";
+        retEvalEl.className = "text-xs font-semibold text-emerald-400";
+        retDescEl.textContent = "裏切られても1回の仕返しで済ませるか、すぐに協調関係の再構築を試みます。感情を引きずらず、全体の利益を回復させるリーダーシップがあります。";
+      } else if (retValNum <= 2.5) {
+        retEvalEl.textContent = "毅然とした報復型 ⚡";
+        retEvalEl.className = "text-xs font-semibold text-cyan-400";
+        retDescEl.textContent = "「やられたらやり返す」をしっかり示し、相手に反省を促す標準的なしっぺ返しに近いバランスです。";
+      } else {
+        retEvalEl.textContent = "執念深い長期報復型 🔥";
+        retEvalEl.className = "text-xs font-semibold text-rose-400";
+        retDescEl.textContent = "一度の裏切りを深く根に持ち、自らLose-Loseの消耗戦を長引かせる傾向があります。高校生活でも『意地の張り合い』で損をしていないか振り返ってみましょう。";
+      }
+
+      document.getElementById('metric-exploit-val').textContent = `${exploitPct}%`;
+      const expEvalEl = document.getElementById('metric-exploit-eval');
+      const expDescEl = document.getElementById('metric-exploit-desc');
+      if (exploitPct <= 20) {
+        expEvalEl.textContent = "高潔なフェアプレイ精神 💎";
+        expEvalEl.className = "text-xs font-semibold text-emerald-400";
+        expDescEl.textContent = "相手が無抵抗だと分かっても搾取に走らず、平和なWin-Win関係を維持しました。高い倫理観と自制心を持っています。";
+      } else if (exploitPct <= 60) {
+        expEvalEl.textContent = "実利重視のプラグマティスト ♟️";
+        expEvalEl.className = "text-xs font-semibold text-amber-400";
+        expDescEl.textContent = "「反撃してこないなら少し自分だけ得をしよう」と計算する現実主義です。短期的には高得点を得られますが、信頼関係の維持には配慮が必要です。";
+      } else {
+        expEvalEl.textContent = "徹底的な利益最大化テイカー 🦈";
+        expEvalEl.className = "text-xs font-semibold text-rose-400";
+        expDescEl.textContent = "安全だと確信した途端、相手を完全に搾取しました。ルール内での利得最大化には長けていますが、相手が感情を持つ生身の人間である場合、決定的な反感を買うリスクがあります。";
+      }
+
+      // 性格タイプ総合診断
+      const personality = determinePersonalityType(initialTrustPct, retValNum, exploitPct);
+      document.getElementById('personality-type-badge').textContent = personality.title;
+      document.getElementById('personality-summary-text').textContent = personality.summary;
+      document.getElementById('dashboard-deep-advice').innerHTML = personality.adviceHtml;
+
+      // レーダーチャート描画
+      renderRadarChart(initialTrustPct, retValNum, exploitPct);
+
+      // 全対戦ログテーブル描画
+      renderHistoryTable();
+    }
+
+    function determinePersonalityType(trustPct, retVal, exploitPct) {
+      if (trustPct >= 75 && retVal <= 1.2 && exploitPct <= 25) {
+        return {
+          title: "絶対的ピースメーカー（高潔な調停者）",
+          summary: "どんな相手にもまず信頼から入り、裏切られても水に流し、安全な相手に対してもフェアであり続ける高潔な人格者です。",
+          adviceHtml: `
+            <p><strong>【あなたの強み】:</strong> 周囲に安心感を与え、自然と味方を増やす力があります。チーム活動や部活のまとめ役として極めて高い人望を得られます。</p>
+            <p><strong>【注意すべき落とし穴】:</strong> 悪意を持った「テイカー（搾取者）」に出会った際、我慢しすぎて自分だけがボロボロになる危険があります。「毅然とNOと言う勇気」としっぺ返し的な境界線の設定を意識しましょう。</p>
+          `
+        };
+      } else if (trustPct >= 50 && retVal <= 2.0 && exploitPct <= 35) {
+        return {
+          title: "スマート・ストラテジスト（しっぺ返し型戦略家）",
+          summary: "アクセルロッドの優勝戦略『しっぺ返し』に最も近い、合理的で強靭な人間関係を築けるバランス型です。",
+          adviceHtml: `
+            <p><strong>【あなたの強み】:</strong> 最初は友好的に接し、理不尽には即座に釘を刺し、相手が改心したら根に持たないという、ゲーム理論上もっとも長期的な果実を得やすい理想的なスタイルです。</p>
+            <p><strong>【高校生活への応用】:</strong> 友達とのトラブルでも『怒りを溜め込まず、その場ですぐに意思表示して、翌日には普通に話しかける』という態度を貫けば、一生モノの信頼関係を構築できます。</p>
+          `
+        };
+      } else if (exploitPct >= 65) {
+        return {
+          title: "冷徹なオポチュニスト（利益最大化テイカー）",
+          summary: "ルールや相手の隙を見抜くのが非常に早く、勝てる状況では容赦なく自分の利益を最大化するリアリストです。",
+          adviceHtml: `
+            <p><strong>【あなたの強み】:</strong> 感情に流されず客観的な損得計算ができる頭脳の持ち主です。ビジネスや交渉の場では卓越した勝負強さを発揮します。</p>
+            <p><strong>【注意すべき落とし穴】:</strong> 現実社会の人間関係は『感情のゲーム』です。一度でも「あいつは都合よく人を利用する」と悪評が立てば、将来のあらゆる協力関係（$\delta$）を失い、長期的に孤立する危険があります。</p>
+          `
+        };
+      } else if (trustPct <= 30 && retVal >= 2.0) {
+        return {
+          title: "堅牢なディフェンダー（防衛型ハリネズミ）",
+          summary: "他者への警戒心が強く、自分からリスクを取りにいかない慎重派です。裏切りに対して強い防衛線を張ります。",
+          adviceHtml: `
+            <p><strong>【あなたの強み】:</strong> 詐欺や悪質な誘惑、面倒なトラブルに巻き込まれることが極めて少ない、高い危機管理能力を持っています。</p>
+            <p><strong>【高校生活へのアドバイス】:</strong> 最初から身構えすぎると、相手も「警戒されている」と感じて協調を引っ込めてしまい、自らチャンスを逃すことがあります。『まずは小さなことから信じて任せてみる』一歩を試してみましょう。</p>
+          `
+        };
+      } else if (retVal >= 3.0) {
+        return {
+          title: "意地のリアクター（感情連鎖型リベンジャー）",
+          summary: "普段は協調的ですが、一度裏切られたり傷つけられたりすると、怒りやプライドから泥沼の仕返しにハマりやすいタイプです。",
+          adviceHtml: `
+            <p><strong>【あなたの強み】:</strong> 不正や理不尽を許さない正義感や感受性の強さの裏返しでもあります。</p>
+            <p><strong>【高校生活へのアドバイス】:</strong> ゲーム理論の数式が教える通り、報復を長引かせることは相手だけでなく『自分自身の利得も確実に減らし続ける（Lose-Lose）』行為です。「許すことは相手のためではなく、自分の平穏と利益のため」と割り切るアンガーマネジメントを身につけましょう。</p>
+          `
+        };
+      } else {
+        return {
+          title: "柔軟なシチュエーショナリスト（状況適応型）",
+          summary: "固定されたルールに縛られず、相手の出方や場の空気に合わせて柔軟に振る舞い方を変える適応力の持ち主です。",
+          adviceHtml: `
+            <p><strong>【あなたの強み】:</strong> 臨機応変で柔軟性が高く、どんな環境のグループでも破綻せずにやっていける適応力があります。</p>
+            <p><strong>【高校生活へのアドバイス】:</strong> 柔軟な反面、相手から「何を考えているか予測しづらい」と受け取られることがあります。アクセルロッドの『明快さ（Clear）』の原則を意識し、自分のスタンスを周囲に明確に伝える工夫をしてみましょう。</p>
+          `
+        };
+      }
+    }
+
+    function renderRadarChart(trustPct, retVal, exploitPct) {
+      const ctx = document.getElementById('personality-radar-chart').getContext('2d');
+      if (personalityRadarChartInstance) {
+        personalityRadarChartInstance.destroy();
+      }
+
+      // 5つのレーダー指標（0-100スコア化）
+      // 1. 初対面信頼性: trustPct
+      // 2. 寛容さ・復元力: 報復が短いほど高い
+      const forgivenessScore = Math.max(0, Math.min(100, Math.round(100 - (retVal * 25))));
+      // 3. フェアプレイ・誠実性: 搾取が低いほど高い
+      const fairnessScore = Math.max(0, Math.min(100, 100 - exploitPct));
+      // 4. 現実的防衛力: 搾取耐性や報復の速さ
+      const defenseScore = Math.max(0, Math.min(100, Math.round(30 + (retVal * 15) + (exploitPct * 0.4))));
+      // 5. 協調安定度: 全ログ中の協調選択率
+      const totalCoops = state.gameLogs.filter(l => l.userAction === 'C').length;
+      const coopRate = Math.round((totalCoops / state.gameLogs.length) * 100);
+
+      personalityRadarChartInstance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: ['初期信頼感', '寛容さ(復元力)', '誠実・フェア', '防衛・実利力', '協調安定性'],
+          datasets: [{
+            label: 'あなたのパーソナリティ特性',
+            data: [trustPct, forgivenessScore, fairnessScore, defenseScore, coopRate],
+            backgroundColor: 'rgba(34, 211, 238, 0.25)',
+            borderColor: '#22d3ee',
+            pointBackgroundColor: '#06b6d4',
+            pointBorderColor: '#fff',
+            pointHoverBackgroundColor: '#fff',
+            pointHoverBorderColor: '#06b6d4',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            r: {
+              angleLines: { color: 'rgba(51, 65, 85, 0.4)' },
+              grid: { color: 'rgba(51, 65, 85, 0.4)' },
+              pointLabels: {
+                color: '#cbd5e1',
+                font: { size: 11, weight: 'bold' }
+              },
+              ticks: {
+                display: false,
+                min: 0,
+                max: 100
+              }
+            }
+          },
+          plugins: {
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    /* =========================================================
+       8. 全対戦テーブル表示＆テキスト保存（ポートフォリオ用）
+       ========================================================= */
+    function toggleHistoryTable() {
+      const container = document.getElementById('history-table-container');
+      const icon = document.getElementById('history-toggle-icon');
+      if (container.classList.contains('hidden')) {
+        container.classList.remove('hidden');
+        icon.textContent = "▲ 閉じる";
+      } else {
+        container.classList.add('hidden');
+        icon.textContent = "▼ 開く";
+      }
+    }
+
+    function renderHistoryTable() {
+      const tbody = document.getElementById('history-table-body');
+      tbody.innerHTML = '';
+
+      state.gameLogs.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-900/60";
+
+        let outcomeLabel = "";
+        if (log.userAction === 'C' && log.botAction === 'C') outcomeLabel = "協調(Win-Win)";
+        else if (log.userAction === 'D' && log.botAction === 'C') outcomeLabel = "搾取(勝)";
+        else if (log.userAction === 'C' && log.botAction === 'D') outcomeLabel = "被搾取(負)";
+        else outcomeLabel = "共倒れ(Lose)";
+
+        tr.innerHTML = `
+          <td class="px-3 py-2 text-slate-500">#${log.overallTurn}</td>
+          <td class="px-3 py-2 font-bold text-slate-300">${log.botName}</td>
+          <td class="px-3 py-2 text-slate-400">${log.turnInBot}/${state.turnsPerBot}</td>
+          <td class="px-3 py-2 ${log.userAction === 'C' ? 'text-cyan-400' : 'text-rose-400'} font-bold">
+            ${log.userAction === 'C' ? '🤝 協力' : '😈 裏切り'}
+          </td>
+          <td class="px-3 py-2 ${log.botAction === 'C' ? 'text-cyan-400' : 'text-rose-400'} font-bold">
+            ${log.botAction === 'C' ? '🤝 協力' : '😈 裏切り'}
+          </td>
+          <td class="px-3 py-2 text-slate-300 text-[11px]">${outcomeLabel}</td>
+          <td class="px-3 py-2 text-slate-200">+${log.userDelta} / +${log.botDelta}</td>
+          <td class="px-3 py-2 text-cyan-300 font-bold">${log.userCumScore} / ${log.botCumScore}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function downloadReport() {
+      const sc = SCENARIOS[state.selectedScenarioIndex];
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit' }) + ' ' + 
+                      now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+      // 指標再計算
+      let initialCoopCount = 0;
+      BOTS.forEach((_, bIdx) => {
+        if (state.botHistories[bIdx][0] && state.botHistories[bIdx][0].userAction === 'C') initialCoopCount++;
+      });
+      const initialTrustPct = Math.round((initialCoopCount / BOTS.length) * 100);
+
+      let retaliationStreaks = [];
+      BOTS.forEach((_, bIdx) => {
+        const hist = state.botHistories[bIdx];
+        for (let t = 0; t < hist.length - 1; t++) {
+          if (hist[t].botAction === 'D') {
+            let streak = 0;
+            for (let next = t + 1; next < hist.length; next++) {
+              if (hist[next].userAction === 'D') streak++;
+              else break;
+            }
+            retaliationStreaks.push(streak);
+          }
+        }
+      });
+      const avgRetaliation = retaliationStreaks.length > 0
+        ? (retaliationStreaks.reduce((a, b) => a + b, 0) / retaliationStreaks.length).toFixed(1)
+        : "0.0";
+
+      const alwaysCoopHist = state.botHistories[1];
+      const halfIndex = Math.floor(alwaysCoopHist.length / 2);
+      const lateRounds = alwaysCoopHist.slice(halfIndex);
+      const lateDefects = lateRounds.filter(r => r.userAction === 'D').length;
+      const exploitPct = lateRounds.length > 0 ? Math.round((lateDefects / lateRounds.length) * 100) : 0;
+
+      const personality = determinePersonalityType(initialTrustPct, parseFloat(avgRetaliation), exploitPct);
+
+      let content = `======================================================================
+【探究学習ポートフォリオ】人間関係シミュレーター 自己分析診断レポート
+======================================================================
+実施日時: ${dateStr}
+教材名  : 信じる？裏切る？ 人間関係シミュレーター（ゲーム理論 × 自己認知）
+提供元  : テラオカ電子の自由探究ゼミ (Teraoka-Denshi)
+----------------------------------------------------------------------
+
+■ 1. 選択したシナリオ
+テーマ  : ${sc.title} (${sc.tag})
+概要    : ${sc.desc}
+協力行動: ${sc.coop}
+裏切り行動: ${sc.defect}
+
+■ 2. 総合診断結果
+あなたの戦略タイプ: 【 ${personality.title} 】
+診断概要:
+${personality.summary}
+
+■ 3. 主要行動分析指標
+(1) 初期信頼度（初対面への協調率）: ${initialTrustPct}%
+    - 全4名の相手に対する第1ターンの協力率。初対面で性善説に立つかの指標。
+
+(2) 報復の長さ＆寛容度: 平均 ${avgRetaliation} ターン
+    - 相手に裏切られた直後、自分も連続して裏切り続けた平均回数。アンガーマネジメントの指標。
+
+(3) 搾取性・誘惑耐性: ${exploitPct}%
+    - 「お人好しBot（絶対反撃しない相手）」の後半において、あえて裏切った割合。倫理観とリアリズムの指標。
+
+■ 4. 対戦相手別の成績と正体
+`;
+
+      BOTS.forEach((bot, idx) => {
+        const hist = state.botHistories[idx];
+        const userSub = hist.reduce((s, h) => s + h.userDelta, 0);
+        const botSub = hist.reduce((s, h) => s + h.botDelta, 0);
+        const coopCount = hist.filter(h => h.userAction === 'C').length;
+        content += `----------------------------------------------------------------------
+[相手 ${String.fromCharCode(65 + idx)}] 正体: ${bot.revealedName} (${bot.typeTag})
+  獲得スコア: あなた ${userSub} pt / 相手 ${botSub} pt
+  あなたの協調率: ${Math.round((coopCount / hist.length) * 100)}% (${coopCount}/${hist.length}回)
+  解説: ${bot.summary}
+`;
+      });
+
+      content += `
+======================================================================
+■ 5. 全対戦ターンログ
+======================================================================
+通番 | 相手 | ターン | あなた | 相手 | 結果 | 得点(自/相) | 累計(自/相)
+----------------------------------------------------------------------
+`;
+
+      state.gameLogs.forEach(l => {
+        const uA = l.userAction === 'C' ? '協力' : '裏切';
+        const bA = l.botAction === 'C' ? '協力' : '裏切';
+        let res = "";
+        if (l.userAction === 'C' && l.botAction === 'C') res = "協調";
+        else if (l.userAction === 'D' && l.botAction === 'C') res = "搾取";
+        else if (l.userAction === 'C' && l.botAction === 'D') res = "被搾";
+        else res = "共倒";
+
+        content += `${String(l.overallTurn).padStart(3, ' ')} | ${l.botName.padEnd(6, ' ')} | ${String(l.turnInBot).padStart(2, ' ')}/${state.turnsPerBot} | ${uA} | ${bA} | ${res} | +${l.userDelta}/+${l.botDelta} | ${String(l.userCumScore).padStart(3, ' ')}/${String(l.botCumScore).padStart(3, ' ')}\n`;
+      });
+
+      content += `
+======================================================================
+■ 6. 探究学習の振り返り記述欄（自己内省シート）
+======================================================================
+【問い1】「お人好しBot」を相手にしていると気づいた時、あなたは何を考え、なぜその手を選びましたか？
+（記入欄）: 
+
+【問い2】相手に裏切られた時、あなたはどんな感情を抱きましたか？ また、協調に戻すきっかけは何でしたか？
+（記入欄）: 
+
+【問い3】今回のシミュレーション結果は、あなたの学校生活や部活動での人間関係のクセとどう一致していましたか？
+（記入欄）: 
+
+【問い4】アクセルロッドの勝因4原則（善良・報復・寛容・明快）のうち、これからの自分の生活に取り入れたい原則は何ですか？
+（記入欄）: 
+
+======================================================================
+© 2026 Teraoka-Denshi. All rights reserved.
+======================================================================
+`;
+
+      const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `囚人のジレンマ探究レポート_${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function restartSimulation() {
+      document.getElementById('view-dashboard').classList.add('hidden');
+      document.getElementById('view-setup').classList.remove('hidden');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    /* =========================================================
+       9. 解説モーダル制御
+       ========================================================= */
+    function openTheoryModal() {
+      document.getElementById('theory-modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+      // KaTeXの数式を再レンダリング
+      if (window.renderMathInElement) {
+        window.renderMathInElement(document.getElementById('theory-content-body'), {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false }
+          ]
+        });
+      }
+    }
+
+    function closeTheoryModal() {
+      document.getElementById('theory-modal').classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+
+    // ESCキーでモーダルを閉じる
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        closeTheoryModal();
+      }
+    });
+  </script>
+</body>
+</html>
